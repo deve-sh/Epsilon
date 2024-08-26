@@ -8,3 +8,28 @@ Also takes care of setting up logging interceptors and passing them to the VM's 
 
 - [ ] Convert this into a package runnable via the CLI locally
 - [ ] Add a provision that the Cloud Builder can import this repository along with the user's code and build this into a Docker container and run `npm start` to listen on port 8080.
+
+### How to test and develop
+
+Create a `test.js` file and define your cloud functions as:
+
+```js
+module.exports.functionName = {
+	definition: async (req, res) => {
+		return res.status(200).send("Hello");
+	},
+	config: {},
+};
+```
+
+Run `npm run start`
+
+### Local usage for consumers of Epsilon
+
+This functionality will be abstracted, all the consumers have to do is define an `index.js` file, and run `npx epsilon-runner serve-functions`.
+
+This will start the local functions wrapped by Express.
+
+### At Build-time
+
+At build-time, this folder is mixed with the contents of the user's repository and a Docker container is generated per function, that Docker container is then uploaded and pulled into a VM for execution of that function in isolation.
