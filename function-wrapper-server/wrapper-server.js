@@ -4,6 +4,9 @@ require("dotenv").config();
 
 const FUNCTIONS_PATH = process.env.FUNCTIONS_PATH || "./test";
 
+// build | local
+const mode = process.argv[2] || "local";
+
 const express = require("express");
 
 const app = express();
@@ -51,11 +54,12 @@ function loadFunction(functionName = "") {
 		}
 	});
 
-	console.log("Loaded function", FUNCTION_NAME);
+	console.log(
+		`Loaded function ${FUNCTION_NAME}${
+			mode !== "build" ? ` at http://localhost:8080/${FUNCTION_NAME}` : ""
+		}`
+	);
 }
-
-// build | local
-const mode = process.argv[2] || "local";
 
 if (mode !== "build") {
 	// Load all cloud functions to test and work with locally
