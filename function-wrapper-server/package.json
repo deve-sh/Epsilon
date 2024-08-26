@@ -4,7 +4,8 @@
 	"description": "Wrapper around a user's code to run inside a Server",
 	"main": "index.js",
 	"scripts": {
-		"start": "node wrapper-server"
+		"start": "node wrapper-server local",
+		"start:build-mode": "node wrapper-server build"
 	},
 	"keywords": [],
 	"author": "Devesh<contact@devesh.tech>",
