@@ -1,0 +1,16 @@
+{
+	"name": "function-wrapper-server",
+	"version": "1.0.0",
+	"description": "Wrapper around a user's code to run inside a Server",
+	"main": "index.js",
+	"scripts": {
+		"start": "node wrapper-server"
+	},
+	"keywords": [],
+	"author": "Devesh<contact@devesh.tech>",
+	"license": "MIT",
+	"dependencies": {
+		"dotenv": "^16.4.5",
+		"express": "^4.19.2"
+	}
+}
