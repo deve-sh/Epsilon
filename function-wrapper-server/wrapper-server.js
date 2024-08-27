@@ -1,8 +1,11 @@
+#!/usr/bin/env node
+
 // @ts-check
 
 require("dotenv").config();
 
-const FUNCTIONS_PATH = process.env.FUNCTIONS_PATH || "./test";
+const FUNCTIONS_PATH =
+	process.argv[3] || process.env.FUNCTIONS_PATH || "./test";
 
 // build | local
 const mode = process.argv[2] || "local";
@@ -17,7 +20,8 @@ app.use(express.urlencoded({ extended: true }));
 const cloudFunctionDefinitionExports = require(FUNCTIONS_PATH);
 
 function loadFunction(functionName = "") {
-	const FUNCTION_NAME = process.env.FUNCTION_NAME || functionName;
+	const FUNCTION_NAME =
+		functionName || process.argv[4] || process.env.FUNCTION_NAME;
 
 	if (!FUNCTION_NAME) return process.exit(1);
 
@@ -68,7 +72,7 @@ if (mode !== "build") {
 	);
 	functionListExportedByUser.forEach((funcName) => loadFunction(funcName));
 } else {
-	loadFunction(process.env.FUNCTION_NAME);
+	loadFunction(process.argv[4] || process.env.FUNCTION_NAME);
 }
 
 const port = process.env.PORT || 8080;

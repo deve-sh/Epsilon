@@ -26,10 +26,17 @@ Run `npm run start`
 
 ### Local usage for consumers of Epsilon
 
-This functionality will be abstracted, all the consumers have to do is define an `index.js` file, and run `npx epsilon-runner serve-functions`.
+This functionality will be abstracted, all the consumers have to do is define an `index.js` file, and run `npx epsilon-runner`.
 
 This will start the local functions wrapped by Express.
 
 ### At Build-time
 
 At build-time, this folder is mixed with the contents of the user's repository and a Docker container is generated per function, that Docker container is then uploaded and pulled into a VM for execution of that function in isolation.
+
+The command to run the Express server with a single function in build mode inside the Docker container would be:
+
+```bash
+# For bypassing confirmation | ... | <mode> <path> <functionName>
+yes | npx epsilon-runner build ./index getTimestamp
+```
