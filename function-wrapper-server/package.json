@@ -1,6 +1,6 @@
 {
-	"name": "function-wrapper-server",
-	"version": "1.0.0",
+	"name": "epsilon-runner",
+	"version": "0.0.1",
 	"description": "Wrapper around a user's code to run inside a Server",
 	"main": "index.js",
 	"scripts": {

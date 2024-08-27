@@ -1,5 +1,7 @@
 # Epsilon - Cloud Functions Wrapper Server
 
+**Note:** For context visit [https://github.com/deve-sh/epsilon](https://github.com/deve-sh/epsilon).
+
 Provides the wrapper functionality around the user's Express controller implementation.
 
 Also takes care of setting up logging interceptors and passing them to the VM's core logging API for sending to the Cloud.
