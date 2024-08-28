@@ -12,4 +12,7 @@ module.exports.test = {
 };
 `;
 
+const packageJson = `{ "dependencies": {} }`
+
+fs.writeFileSync('./package.json', packageJson);
 fs.writeFileSync('./test.js', code);
