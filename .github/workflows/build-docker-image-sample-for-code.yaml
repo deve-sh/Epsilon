@@ -64,6 +64,7 @@ jobs:
           FUNCTION_NAME: ${{ inputs.function_name }}
           DOCKER_IMAGE_FULL_TAG: ${{ steps.login-to-aws-ecr.outputs.registry }}/${{ inputs.aws_ecr_repo_name }}:${{ inputs.function_name }}
         run: |
+          node generate-sample-function
           node generate-builder-and-dockerfile $FUNCTIONS_EXPORT_PATH $FUNCTION_NAME $DOCKER_IMAGE_FULL_TAG
           sh ./build.sh
           docker push $DOCKER_IMAGE_FULL_TAG
