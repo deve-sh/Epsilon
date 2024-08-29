@@ -16,14 +16,6 @@ on:
         required: true
         default: ap-south-1
         description: AWS Region ID
-      aws_key_id:
-        type: string
-        required: true
-        description: AWS Key ID of your account with access to AWS ECR
-      aws_secret_access_key:
-        type: string
-        required: true
-        description: AWS Secret Access Key of your account with access to AWS ECR
       aws_ecr_repo_name:
         type: string
         required: true
@@ -47,8 +39,8 @@ jobs:
       - name: Setup AWS ECR Details
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ inputs.aws_key_id }}
-          aws-secret-access-key: ${{ inputs.aws_secret_access_key }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ inputs.aws_region }}
 
       - name: Login to Amazon ECR
