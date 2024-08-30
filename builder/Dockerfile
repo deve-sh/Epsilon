@@ -14,6 +14,8 @@ FROM node:18
 
 WORKDIR /app
 
+ENV RUNNING_IN_VM Y
+
 COPY . .
 
 # Install user repository dependencies
