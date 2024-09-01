@@ -1,5 +1,6 @@
 function isRunningInVM() {
-	return !!process.env.RUNNING_IN_VM;
+	const isDocker = require('is-docker');
+	return isDocker();
 }
 
 module.exports = isRunningInVM;
