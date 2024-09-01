@@ -24,6 +24,9 @@ RUN npm i -g epsilon-runner
 
 EXPOSE 8080
 
+# Make everything except /tmp read-only
+RUN chmod -R 555 /app && chmod 777 /tmp
+
 # Update this command dynamically at build time
 CMD npx epsilon-runner build __/app/test__ __testFunction__
 
