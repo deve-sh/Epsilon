@@ -16,6 +16,8 @@ WORKDIR /app
 
 COPY . .
 
+ENV NODE_ENV production
+
 # Install user repository dependencies
 RUN npm install
 
