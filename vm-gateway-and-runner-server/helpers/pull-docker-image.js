@@ -4,8 +4,6 @@ const pullDockerImage = async (functionName) => {
 
 	try {
 		await dockerCLIProxy.pull(getImageTag(functionName));
-
-        // TODO: Create service to get the sha of image related to <functionName>
 	} catch (err) {
 		console.error(err);
 		throw new Error("Container failed to start in VM");

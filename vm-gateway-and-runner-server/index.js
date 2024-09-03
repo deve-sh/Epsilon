@@ -8,41 +8,49 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.all("/:functionName", async (originalReq, originalRes) => {
-	const { functionName } = originalReq.params;
+	try {
+		const { functionName } = originalReq.params;
 
-	const { method, headers, originalUrl } = originalReq;
+		const { method, headers, originalUrl } = originalReq;
 
-	const getProvisionedVMURL = require("./helpers/get-provisioned-vm-url");
+		const getProvisionedVMURL = require("./helpers/get-provisioned-vm-url");
 
-	const provisionedVMURL = await getProvisionedVMURL(functionName);
+		const provisionedVMURL = await getProvisionedVMURL(functionName);
 
-	const originalQueryParams = originalUrl.split("?")[1];
+		if (!provisionedVMURL) return originalRes.sendStatus(429);
 
-	const url = new URL(
-		`${provisionedVMURL}${originalQueryParams ? `?${originalQueryParams}` : ""}`
-	);
+		const originalQueryParams = originalUrl.split("?")[1];
 
-	const options = {
-		host: url.hostname,
-		port: url.port || 8080,
-		path: url.search,
-		method,
-		headers,
-	};
+		const url = new URL(
+			`${provisionedVMURL}${
+				originalQueryParams ? `?${originalQueryParams}` : ""
+			}`
+		);
 
-	const http = require("http");
+		const options = {
+			host: url.hostname,
+			port: url.port || 8080,
+			path: url.search,
+			method,
+			headers,
+		};
 
-	const proxyReq = http.request(options, (proxyRes) => {
-		originalRes.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
-		proxyRes.pipe(originalRes, { end: true });
-	});
+		const http = require("http");
 
-	proxyReq.on("error", (err) => {
-		console.error("Error with proxy request:", err.message);
-		originalRes.status(500).send("Gateway error: " + err.message);
-	});
+		const proxyReq = http.request(options, (proxyRes) => {
+			originalRes.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
+			proxyRes.pipe(originalRes, { end: true });
+		});
 
-	originalReq.pipe(proxyReq, { end: true });
+		proxyReq.on("error", (err) => {
+			console.error("Error with proxy request:", err.message);
+			originalRes.status(500).send("Gateway error: " + err.message);
+		});
+
+		originalReq.pipe(proxyReq, { end: true });
+	} catch {
+		return originalRes.sendStatus(500);
+	}
 });
 
 app.post("/internal/logs", (_req, res) => {
@@ -52,6 +60,11 @@ app.post("/internal/logs", (_req, res) => {
 
 	// Accepted, flush the logs in queue from the docker containers
 	return res.sendStatus(202);
+});
+
+// Health checks
+app.all("/", (_req, res) => {
+	return res.sendStatus(200);
 });
 
 app.listen(9163, () => {

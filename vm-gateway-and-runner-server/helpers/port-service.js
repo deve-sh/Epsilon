@@ -1,12 +1,7 @@
 /**
- * @type {Record<string, Set<number>>}
+ * @type {Record<string, { port: number; containerObject: any; }>}
  */
-const currentlyMappedPortsByFunctionName = {};
-
-/**
- * @type {Record<number, string>}
- */
-const currentlyMappedPortsToContainer = {};
+const currentlyMappedFunctions = {};
 
 const getAvailablePort = () => {
 	return new Promise((resolve, reject) => {
@@ -34,43 +29,32 @@ const getAvailablePort = () => {
 
 const markPortAsAllocatedForContainer = (
 	functionName,
-	port,
-	containerObject
+	{ port, containerObject }
 ) => {
-	if (currentlyMappedPortsByFunctionName[functionName])
-		currentlyMappedPortsByFunctionName[functionName].add(port);
-	else currentlyMappedPortsByFunctionName[functionName] = new Set([port]);
+	if (currentlyMappedFunctions[functionName] || !port) return;
 
-	if (!currentlyMappedPortsToContainer[port])
-		currentlyMappedPortsToContainer[port] = containerObject;
-	else currentlyMappedPortsToContainer[port] = containerObject;
+	currentlyMappedFunctions[functionName] = { port, containerObject };
 };
 
-const markPortAsDeallocatedFromContainer = (functionName, port) => {
-	if (currentlyMappedPortsByFunctionName[functionName])
-		currentlyMappedPortsByFunctionName[functionName].delete(port);
+const markPortAsDeallocatedFromContainer = (functionName) => {
+	if (!currentlyMappedFunctions[functionName]) return;
 
-	if (currentlyMappedPortsToContainer[port]) {
-		// De-provision container
-		currentlyMappedPortsToContainer[port].containerObject.remove();
-		currentlyMappedPortsToContainer[port] = null;
-	}
+	// De-provision container
+	if (currentlyMappedFunctions[functionName].containerObject)
+		currentlyMappedFunctions[functionName].containerObject.remove();
+
+	delete currentlyMappedFunctions[functionName];
 };
 
-const getCurrentlyMappedPortsForFunction = (functionName) => {
-	if (currentlyMappedPortsByFunctionName[functionName])
-		return currentlyMappedPortsByFunctionName[functionName].values().next()
-			.value;
-	return null;
+const getCurrentlyMappedPortForFunction = (functionName) => {
+	if (!currentlyMappedFunctions[functionName]) return null;
+
+	return currentlyMappedFunctions[functionName].port;
 };
 
-module.exports.getAvailablePort = getAvailablePort;
-
-module.exports.markPortAsAllocatedForContainer =
-	markPortAsAllocatedForContainer;
-
-module.exports.markPortAsDeallocatedFromContainer =
-	markPortAsDeallocatedFromContainer;
-
-module.exports.getCurrentlyMappedPortsForFunction =
-	getCurrentlyMappedPortsForFunction;
+module.exports = {
+	getAvailablePort,
+	markPortAsAllocatedForContainer,
+	markPortAsDeallocatedFromContainer,
+	getCurrentlyMappedPortForFunction,
+};
