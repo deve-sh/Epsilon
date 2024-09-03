@@ -8,7 +8,14 @@ const markDockerImageForDeprovisioningAfterInactivity = (functionName) => {
 		clearTimeout(timeoutsForDeprovisioningContainers[functionName]);
 
 	timeoutsForDeprovisioningContainers[functionName] = setTimeout(
-		() => markPortAsDeallocatedFromContainer(functionName),
+		() => {
+			console.log(
+				"Deprovisioning container for function",
+				functionName,
+				"due to no active requests"
+			);
+			markPortAsDeallocatedFromContainer(functionName);
+		},
 		// 65 seconds of no requests to the container by default
 		65 * 1000
 	);

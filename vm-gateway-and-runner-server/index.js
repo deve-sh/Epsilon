@@ -11,6 +11,11 @@ app.all("/:functionName", async (originalReq, originalRes) => {
 	try {
 		const { functionName } = originalReq.params;
 
+		if (functionName.includes(".") || functionName.includes(":"))
+			return originalRes.sendStatus(404);
+
+		// TODO: Add a mapping, where if the Docker image is not found for the function, send back 404
+
 		const { method, headers, originalUrl } = originalReq;
 
 		const getProvisionedVMURL = require("./helpers/get-provisioned-vm-url");
@@ -20,7 +25,7 @@ app.all("/:functionName", async (originalReq, originalRes) => {
 		if (!provisionedVMURL) return originalRes.sendStatus(429);
 
 		const markDockerImageForDeprovisioningAfterInactivity = require("./helpers/timeout-for-deprovisioining");
-		
+
 		markDockerImageForDeprovisioningAfterInactivity(functionName);
 
 		const originalQueryParams = originalUrl.split("?")[1];
@@ -33,8 +38,8 @@ app.all("/:functionName", async (originalReq, originalRes) => {
 
 		const options = {
 			host: url.hostname,
-			port: url.port || 8080,
-			path: url.search,
+			port: Number(url.port || 8080),
+			path: url.pathname + url.search,
 			method,
 			headers,
 		};

@@ -1,6 +1,4 @@
 const runDockerImage = async (functionName) => {
-	const dockerCLIProxy = require("./docker-cli-proxy");
-
 	const {
 		getAvailablePort,
 		markPortAsAllocatedForContainer,
@@ -14,25 +12,34 @@ const runDockerImage = async (functionName) => {
 	try {
 		const availablePort = await getAvailablePort();
 
-		markPortAsAllocatedForContainer(functionName, availablePort);
-
-		const data = await dockerCLIProxy.run(
-			imageTag,
-			[
-				"-d",
-				`--name ${getContainerName(functionName)}`,
-				"--mount type=tmpfs,destination=/tmp",
-				// TODO: Allow for this config to be changed by the user as well similar to timeout
-				'--memory="512m"',
-				`-p ${availablePort}:8080`,
-			],
-			process.stdout
+		console.log(
+			"Starting provisioning process for function",
+			functionName,
+			"on port",
+			availablePort
 		);
 
-		const _output = data[0];
-		const containerObject = data[1];
+		markPortAsAllocatedForContainer(functionName, availablePort);
 
-		if (!containerObject) markPortAsDeallocatedFromContainer(functionName);
+		const util = require("node:util");
+		const exec = util.promisify(require("node:child_process").exec);
+
+		const { stderr } = await exec(
+			`docker run -d --name ${getContainerName(
+				functionName
+			)} --mount type=tmpfs,destination=/tmp --memory="512m" -p ${availablePort}:8080 ${imageTag}`
+		);
+
+		console.log(
+			stderr
+				? `Failed to startup container for function`
+				: "Successfully started up container for function",
+			functionName,
+			"on port",
+			availablePort
+		);
+
+		if (stderr) markPortAsDeallocatedFromContainer(functionName);
 		else markPortAsAllocatedForContainer(functionName, availablePort);
 	} catch (err) {
 		console.error(err);
