@@ -19,6 +19,10 @@ app.all("/:functionName", async (originalReq, originalRes) => {
 
 		if (!provisionedVMURL) return originalRes.sendStatus(429);
 
+		const markDockerImageForDeprovisioningAfterInactivity = require("./helpers/timeout-for-deprovisioining");
+		
+		markDockerImageForDeprovisioningAfterInactivity(functionName);
+
 		const originalQueryParams = originalUrl.split("?")[1];
 
 		const url = new URL(

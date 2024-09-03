@@ -8,10 +8,7 @@ const getProvisionedVMURL = async (functionName) => {
 		return `http://localhost:${alreadyProvisionedPortForFunction}`;
 
 	// Provision new container for function
-	const {
-		pullAndRunDockerImage,
-	} = require("./timeout-and-active-containers-service");
-
+	const pullAndRunDockerImage = require("./pull-and-run-docker-image");
 	await pullAndRunDockerImage(functionName);
 
 	const newlyProvisionedPort = getCurrentlyMappedPortForFunction(functionName);
