@@ -1,7 +1,7 @@
 /**
- * @type {Record<string, { port: number; containerObject: any; }>}
+ * @type {Record<string, { port: number; }>}
  */
-const currentlyMappedFunctions = {};
+const currentlyMappedFunctionPorts = {};
 
 const getAvailablePort = () => {
 	return new Promise((resolve, reject) => {
@@ -27,29 +27,37 @@ const getAvailablePort = () => {
 	});
 };
 
-const markPortAsAllocatedForContainer = (
-	functionName,
-	{ port, containerObject }
-) => {
-	if (currentlyMappedFunctions[functionName] || !port) return;
+const markPortAsAllocatedForContainer = (functionName, port) => {
+	if (currentlyMappedFunctionPorts[functionName] || !port) return;
 
-	currentlyMappedFunctions[functionName] = { port, containerObject };
+	currentlyMappedFunctionPorts[functionName] = port;
 };
 
-const markPortAsDeallocatedFromContainer = (functionName) => {
-	if (!currentlyMappedFunctions[functionName]) return;
+const markPortAsDeallocatedFromContainer = async (functionName) => {
+	if (!currentlyMappedFunctionPorts[functionName]) return;
+
+	delete currentlyMappedFunctionPorts[functionName];
 
 	// De-provision container
-	if (currentlyMappedFunctions[functionName].containerObject)
-		currentlyMappedFunctions[functionName].containerObject.remove();
+	const getContainerName = require("../constants/get-container-name");
 
-	delete currentlyMappedFunctions[functionName];
+	const util = require("node:util");
+	const exec = util.promisify(require("node:child_process").exec);
+
+	try {
+		const { stderr } = await exec(
+			`docker stop ${getContainerName(functionName)}`
+		);
+		if (stderr) return;
+		
+		await exec(`docker rm ${getContainerName(functionName)}`);
+	} catch {}
 };
 
 const getCurrentlyMappedPortForFunction = (functionName) => {
-	if (!currentlyMappedFunctions[functionName]) return null;
+	if (!currentlyMappedFunctionPorts[functionName]) return null;
 
-	return currentlyMappedFunctions[functionName].port;
+	return currentlyMappedFunctionPorts[functionName];
 };
 
 module.exports = {

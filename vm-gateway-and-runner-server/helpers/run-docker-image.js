@@ -6,6 +6,7 @@ const runDockerImage = async (functionName) => {
 		markPortAsAllocatedForContainer,
 		markPortAsDeallocatedFromContainer,
 	} = require("./port-service");
+	const getContainerName = require("../constants/get-container-name");
 
 	const getImageTag = require("../constants/get-image-tag");
 	const imageTag = getImageTag(functionName);
@@ -13,14 +14,13 @@ const runDockerImage = async (functionName) => {
 	try {
 		const availablePort = await getAvailablePort();
 
-		markPortAsAllocatedForContainer(functionName, {
-			port: availablePort,
-			containerObject: null,
-		});
+		markPortAsAllocatedForContainer(functionName, availablePort);
 
 		const data = await dockerCLIProxy.run(
 			imageTag,
 			[
+				"-d",
+				`--name ${getContainerName(functionName)}`,
 				"--mount type=tmpfs,destination=/tmp",
 				// TODO: Allow for this config to be changed by the user as well similar to timeout
 				'--memory="512m"',
@@ -32,12 +32,8 @@ const runDockerImage = async (functionName) => {
 		const _output = data[0];
 		const containerObject = data[1];
 
-		if (containerObject)
-			markPortAsAllocatedForContainer(functionName, {
-				port: availablePort,
-				containerObject,
-			});
-		else markPortAsDeallocatedFromContainer(functionName);
+		if (!containerObject) markPortAsDeallocatedFromContainer(functionName);
+		else markPortAsAllocatedForContainer(functionName, availablePort);
 	} catch (err) {
 		console.error(err);
 		markPortAsDeallocatedFromContainer(functionName);

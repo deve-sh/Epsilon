@@ -15,7 +15,7 @@ fs.writeFileSync(
 	dockerFileContents
 		.replace(
 			"__/app/test__",
-			require("path").join("/app", passedFunctionExportsPath)
+			require("path").join("/app", passedFunctionExportsPath).replace("\\", "/")
 		)
 		.replace("__testFunction__", passedFunctionName || "test")
 );
