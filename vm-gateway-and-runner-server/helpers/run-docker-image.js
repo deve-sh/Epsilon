@@ -2,7 +2,7 @@ const runDockerImage = async (functionName, requestId) => {
 	const {
 		getAvailablePort,
 		markPortAsAllocatedForContainer,
-		markPortAsDeallocatedFromContainer,
+		markPortAsDeallocated,
 	} = require("./port-service");
 
 	const getImageTag = require("../constants/get-image-tag");
@@ -22,7 +22,7 @@ const runDockerImage = async (functionName, requestId) => {
 
 		const exec = require("./exec");
 		const { stderr } = await exec(
-			`docker run -d --name ${requestId} --mount type=tmpfs,destination=/tmp --memory="512m" -p ${availablePort}:8080 ${imageTag}`
+			`docker run -d --rm --name ${requestId} --mount type=tmpfs,destination=/tmp --memory="512m" -p ${availablePort}:8080 ${imageTag}`
 		);
 
 		console.log(
@@ -34,12 +34,15 @@ const runDockerImage = async (functionName, requestId) => {
 			availablePort
 		);
 
-		if (stderr) markPortAsDeallocatedFromContainer(functionName, availablePort);
-		else
+		if (stderr) {
+			markPortAsDeallocated(functionName, availablePort);
+			return null;
+		} else {
 			markPortAsAllocatedForContainer(functionName, requestId, availablePort);
+			return availablePort;
+		}
 	} catch (err) {
 		console.error(err);
-		markPortAsDeallocatedFromContainer(functionName);
 		throw new Error("Container failed to start in VM");
 	}
 };

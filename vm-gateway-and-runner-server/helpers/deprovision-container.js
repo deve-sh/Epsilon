@@ -1,13 +1,10 @@
 const deprovisionContainer = async (requestId) => {
-	// De-provision container
 	try {
 		const exec = require("./exec");
-		const { stderr } = await exec(`docker stop ${requestId}`);
-
-		if (stderr) return;
-
-		await exec(`docker rm ${requestId}`);
-	} catch {}
+		await exec(`docker stop ${requestId}`);
+	} catch (err) {
+		console.log("Error while stopping docker container:", err);
+	}
 };
 
 module.exports = deprovisionContainer;
