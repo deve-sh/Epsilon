@@ -10,9 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "dockerode": "^4.0.2",
     "express": "^4.19.2",
-    "get-available-port": "^1.0.0",
-    "isomorphic-fetch": "^3.0.0"
+    "uuid": "^10.0.0",
+    "wait-port": "^1.1.0"
   }
 }

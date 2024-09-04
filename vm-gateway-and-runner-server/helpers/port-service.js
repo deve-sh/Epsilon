@@ -1,5 +1,7 @@
+// @ts-check
+
 /**
- * @type {Record<string, { port: number; }>}
+ * @type {Record<string, { port: number, requestId: string }[]>}
  */
 const currentlyMappedFunctionPorts = {};
 
@@ -27,41 +29,63 @@ const getAvailablePort = () => {
 	});
 };
 
-const markPortAsAllocatedForContainer = (functionName, port) => {
-	if (currentlyMappedFunctionPorts[functionName] || !port) return;
+const markPortAsAllocatedForContainer = (functionName, requestId, port) => {
+	if (
+		currentlyMappedFunctionPorts[functionName] &&
+		currentlyMappedFunctionPorts[functionName].find((map) => map.port === port)
+	)
+		return;
 
-	currentlyMappedFunctionPorts[functionName] = port;
+	if (!currentlyMappedFunctionPorts[functionName])
+		currentlyMappedFunctionPorts[functionName] = [];
+
+	currentlyMappedFunctionPorts[functionName].push({ requestId, port });
 };
 
-const markPortAsDeallocatedFromContainer = async (functionName) => {
-	if (!currentlyMappedFunctionPorts[functionName]) return;
+const getPortAssociatedWithRequest = (functionName, requestId) => {
+	if (
+		!currentlyMappedFunctionPorts[functionName] ||
+		!currentlyMappedFunctionPorts[functionName].length
+	)
+		return null;
 
-	delete currentlyMappedFunctionPorts[functionName];
+	const foundEntry = currentlyMappedFunctionPorts[functionName].find(
+		(map) => map.requestId === requestId
+	);
 
-	// De-provision container
-	const getContainerName = require("../constants/get-container-name");
+	if (!foundEntry) return null;
 
-	const util = require("node:util");
-	const exec = util.promisify(require("node:child_process").exec);
+	return foundEntry.port;
+};
 
-	try {
-		const { stderr } = await exec(
-			`docker stop ${getContainerName(functionName)}`
-		);
-		if (stderr) return;
-		
-		await exec(`docker rm ${getContainerName(functionName)}`);
-	} catch {}
+const markPortAsDeallocatedFromContainer = async (functionName, port) => {
+	if (
+		!currentlyMappedFunctionPorts[functionName] ||
+		!currentlyMappedFunctionPorts[functionName].length
+	)
+		return;
+
+	currentlyMappedFunctionPorts[functionName] = currentlyMappedFunctionPorts[
+		functionName
+	].filter((map) => map.port !== port);
 };
 
 const getCurrentlyMappedPortForFunction = (functionName) => {
-	if (!currentlyMappedFunctionPorts[functionName]) return null;
+	if (
+		!currentlyMappedFunctionPorts[functionName] ||
+		!currentlyMappedFunctionPorts[functionName].length
+	)
+		return null;
 
-	return currentlyMappedFunctionPorts[functionName];
+	// TODO: Change this to a setup where we check for idle containers instead of just returning the last one
+	return currentlyMappedFunctionPorts[functionName][
+		currentlyMappedFunctionPorts[functionName].length - 1
+	].port;
 };
 
 module.exports = {
 	getAvailablePort,
+	getPortAssociatedWithRequest,
 	markPortAsAllocatedForContainer,
 	markPortAsDeallocatedFromContainer,
 	getCurrentlyMappedPortForFunction,

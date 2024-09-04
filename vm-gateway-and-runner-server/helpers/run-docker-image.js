@@ -1,10 +1,9 @@
-const runDockerImage = async (functionName) => {
+const runDockerImage = async (functionName, requestId) => {
 	const {
 		getAvailablePort,
 		markPortAsAllocatedForContainer,
 		markPortAsDeallocatedFromContainer,
 	} = require("./port-service");
-	const getContainerName = require("../constants/get-container-name");
 
 	const getImageTag = require("../constants/get-image-tag");
 	const imageTag = getImageTag(functionName);
@@ -19,15 +18,11 @@ const runDockerImage = async (functionName) => {
 			availablePort
 		);
 
-		markPortAsAllocatedForContainer(functionName, availablePort);
+		markPortAsAllocatedForContainer(functionName, requestId, availablePort);
 
-		const util = require("node:util");
-		const exec = util.promisify(require("node:child_process").exec);
-
+		const exec = require("./exec");
 		const { stderr } = await exec(
-			`docker run -d --name ${getContainerName(
-				functionName
-			)} --mount type=tmpfs,destination=/tmp --memory="512m" -p ${availablePort}:8080 ${imageTag}`
+			`docker run -d --name ${requestId} --mount type=tmpfs,destination=/tmp --memory="512m" -p ${availablePort}:8080 ${imageTag}`
 		);
 
 		console.log(
@@ -39,8 +34,9 @@ const runDockerImage = async (functionName) => {
 			availablePort
 		);
 
-		if (stderr) markPortAsDeallocatedFromContainer(functionName);
-		else markPortAsAllocatedForContainer(functionName, availablePort);
+		if (stderr) markPortAsDeallocatedFromContainer(functionName, availablePort);
+		else
+			markPortAsAllocatedForContainer(functionName, requestId, availablePort);
 	} catch (err) {
 		console.error(err);
 		markPortAsDeallocatedFromContainer(functionName);

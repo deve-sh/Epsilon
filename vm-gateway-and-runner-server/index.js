@@ -9,6 +9,9 @@ app.use(express.urlencoded({ extended: true }));
 
 app.all("/:functionName", async (originalReq, originalRes) => {
 	try {
+		const { v4: uuid } = require("uuid");
+		const requestId = uuid().replace(/-/g, "");
+
 		const { functionName } = originalReq.params;
 
 		if (functionName.includes(".") || functionName.includes(":"))
@@ -20,13 +23,16 @@ app.all("/:functionName", async (originalReq, originalRes) => {
 
 		const getProvisionedVMURL = require("./helpers/get-provisioned-vm-url");
 
-		const provisionedVMURL = await getProvisionedVMURL(functionName);
+		const provisionedVMURL = await getProvisionedVMURL(functionName, requestId);
 
 		if (!provisionedVMURL) return originalRes.sendStatus(429);
 
-		const markDockerImageForDeprovisioningAfterInactivity = require("./helpers/timeout-for-deprovisioining");
+		const markDockerContainerForDeprovisioningAfterInactivity = require("./helpers/timeout-for-deprovisioning");
 
-		markDockerImageForDeprovisioningAfterInactivity(functionName);
+		markDockerContainerForDeprovisioningAfterInactivity(
+			functionName,
+			requestId
+		);
 
 		const originalQueryParams = originalUrl.split("?")[1];
 
@@ -41,7 +47,7 @@ app.all("/:functionName", async (originalReq, originalRes) => {
 			port: Number(url.port || 8080),
 			path: url.pathname + url.search,
 			method,
-			headers,
+			headers: { ...headers, "x-epsilon-request-id": requestId },
 		};
 
 		const http = require("http");
