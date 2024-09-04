@@ -27,44 +27,62 @@ app.all("/:functionName", async (originalReq, originalRes) => {
 
 		if (!provisionedVMURL) return originalRes.sendStatus(429);
 
-		const markDockerContainerForDeprovisioningAfterInactivity = require("./helpers/timeout-for-deprovisioning");
-
-		markDockerContainerForDeprovisioningAfterInactivity(
-			functionName,
-			requestId
-		);
-
 		const originalQueryParams = originalUrl.split("?")[1];
 
-		const url = new URL(
+		const containerExposedURL = new URL(
 			`${provisionedVMURL}${
 				originalQueryParams ? `?${originalQueryParams}` : ""
 			}`
 		);
 
-		const options = {
-			host: url.hostname,
-			port: Number(url.port || 8080),
-			path: url.pathname + url.search,
+		const port = Number(containerExposedURL.port);
+
+		const markDockerContainerForDeprovisioningAfterInactivity = require("./helpers/timeout-for-deprovisioning");
+		const { setPortBusyStatus } = require("./helpers/port-service");
+
+		markDockerContainerForDeprovisioningAfterInactivity(
+			functionName,
+			requestId,
+			port
+		);
+		setPortBusyStatus(port, true);
+
+		const proxyReqOptions = {
+			host: containerExposedURL.hostname,
+			port,
+			path: containerExposedURL.pathname + containerExposedURL.search,
 			method,
-			headers: { ...headers, "x-epsilon-request-id": requestId },
+			timeout: 5_000,
+			headers: {
+				...headers,
+				host: containerExposedURL.hostname,
+				"x-epsilon-request-id": requestId,
+			},
 		};
 
 		const http = require("http");
 
-		const proxyReq = http.request(options, (proxyRes) => {
+		const proxyReq = http.request(proxyReqOptions, (proxyRes) => {
 			originalRes.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
 			proxyRes.pipe(originalRes, { end: true });
+			proxyRes.on("end", () => {
+				setPortBusyStatus(port, false);
+			});
 		});
 
 		proxyReq.on("error", (err) => {
 			console.error("Error with proxy request:", err.message);
-			originalRes.status(500).send("Gateway error: " + err.message);
+			originalRes.status(200).send("Gateway error: " + err.message);
+			setPortBusyStatus(port, false);
 		});
 
-		originalReq.pipe(proxyReq, { end: true });
+		if (originalReq.method !== "GET" && originalReq.method !== "HEAD") {
+			originalReq.pipe(proxyReq, { end: true });
+		} else {
+			proxyReq.end();
+		}
 	} catch {
-		return originalRes.sendStatus(500);
+		if (!originalRes.headersSent) return originalRes.sendStatus(500);
 	}
 });
 

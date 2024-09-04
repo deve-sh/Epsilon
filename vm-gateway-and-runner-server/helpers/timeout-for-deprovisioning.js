@@ -1,16 +1,14 @@
 const deprovisionContainer = require("./deprovision-container");
-const {
-	markPortAsDeallocatedFromContainer,
-	getPortAssociatedWithRequest,
-} = require("./port-service");
+const { markPortAsDeallocated } = require("./port-service");
 
 const timeoutsForDeprovisioningContainers = {};
 
 const markDockerContainerForDeprovisioningAfterInactivity = (
 	functionName,
-	requestId
+	requestId,
+	port
 ) => {
-	const key = `${functionName}-${requestId}`;
+	const key = `${functionName}-${port.toString()}`;
 
 	if (timeoutsForDeprovisioningContainers[key])
 		// Override any existing timeout for new request having come to the container
@@ -19,13 +17,11 @@ const markDockerContainerForDeprovisioningAfterInactivity = (
 	timeoutsForDeprovisioningContainers[key] = setTimeout(
 		() => {
 			console.log(
-				"Deprovisioning container for function",
+				"Deprovisioning idle container for function",
 				functionName,
 				"due to no active requests"
 			);
-			markPortAsDeallocatedFromContainer(
-				getPortAssociatedWithRequest(functionName, requestId)
-			);
+			markPortAsDeallocated(functionName, port);
 			deprovisionContainer(requestId);
 		},
 		// 60 seconds of no requests to the container by default

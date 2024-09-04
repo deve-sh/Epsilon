@@ -4,10 +4,10 @@ const getLocalHostPortURL = (functionName, port) => {
 
 const getProvisionedVMURL = (functionName, requestId) => {
 	return new Promise(async (resolve) => {
-		const { getCurrentlyMappedPortForFunction } = require("./port-service");
+		const { getCurrentlyMappedIdlePortForFunction } = require("./port-service");
 
 		const alreadyProvisionedPortForFunction =
-			getCurrentlyMappedPortForFunction(functionName);
+			getCurrentlyMappedIdlePortForFunction(functionName);
 
 		if (alreadyProvisionedPortForFunction) {
 			console.log(
@@ -26,10 +26,10 @@ const getProvisionedVMURL = (functionName, requestId) => {
 
 		// Provision new container for function
 		const pullAndRunDockerImage = require("./pull-and-run-docker-image");
-		await pullAndRunDockerImage(functionName, requestId);
-
-		const newlyProvisionedPort =
-			getCurrentlyMappedPortForFunction(functionName);
+		const newlyProvisionedPort = await pullAndRunDockerImage(
+			functionName,
+			requestId
+		);
 
 		if (newlyProvisionedPort) {
 			const waitOnPort = require("wait-port");
@@ -41,7 +41,7 @@ const getProvisionedVMURL = (functionName, requestId) => {
 				await waitOnPort({
 					host: url.hostname,
 					port: Number(url.port),
-					path: '/',
+					path: "/",
 					timeout: 5_000,
 				});
 				return resolve(url.toString());

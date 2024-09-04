@@ -1,9 +1,9 @@
-// @ts-check
-
 /**
  * @type {Record<string, { port: number, requestId: string }[]>}
  */
 const currentlyMappedFunctionPorts = {};
+
+const busyPorts = new Set();
 
 const getAvailablePort = () => {
 	return new Promise((resolve, reject) => {
@@ -58,8 +58,9 @@ const getPortAssociatedWithRequest = (functionName, requestId) => {
 	return foundEntry.port;
 };
 
-const markPortAsDeallocatedFromContainer = async (functionName, port) => {
+const markPortAsDeallocated = async (functionName, port) => {
 	if (
+		!port ||
 		!currentlyMappedFunctionPorts[functionName] ||
 		!currentlyMappedFunctionPorts[functionName].length
 	)
@@ -68,25 +69,38 @@ const markPortAsDeallocatedFromContainer = async (functionName, port) => {
 	currentlyMappedFunctionPorts[functionName] = currentlyMappedFunctionPorts[
 		functionName
 	].filter((map) => map.port !== port);
+
+	setPortBusyStatus(port, false);
 };
 
-const getCurrentlyMappedPortForFunction = (functionName) => {
+const getCurrentlyMappedIdlePortForFunction = (functionName) => {
 	if (
 		!currentlyMappedFunctionPorts[functionName] ||
 		!currentlyMappedFunctionPorts[functionName].length
 	)
 		return null;
 
-	// TODO: Change this to a setup where we check for idle containers instead of just returning the last one
-	return currentlyMappedFunctionPorts[functionName][
-		currentlyMappedFunctionPorts[functionName].length - 1
-	].port;
+	const portList = currentlyMappedFunctionPorts[functionName].map(
+		(map) => map.port
+	);
+
+	// Not a busy port right now
+	for (const port of portList) if (!busyPorts.has(port)) return port;
+
+	// All ports busy, signal that to the consumer
+	return null;
+};
+
+const setPortBusyStatus = (port, busy = true) => {
+	if (busy) return busyPorts.add(port);
+	return busyPorts.delete(port);
 };
 
 module.exports = {
 	getAvailablePort,
 	getPortAssociatedWithRequest,
 	markPortAsAllocatedForContainer,
-	markPortAsDeallocatedFromContainer,
-	getCurrentlyMappedPortForFunction,
+	markPortAsDeallocated,
+	getCurrentlyMappedIdlePortForFunction,
+	setPortBusyStatus,
 };
